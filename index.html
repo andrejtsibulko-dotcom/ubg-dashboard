@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>UBG Дашборд</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  html,body{margin:0;height:100%}
+  body{font:16px/1.4 -apple-system,system-ui,sans-serif;background:#f4f5f9;color:#667085;display:flex;align-items:center;justify-content:center}
+  @media (prefers-color-scheme:dark){body{background:#0f1117;color:#98a2b3}}
+</style>
+</head>
+<body>
+<div id="m">Зареждане…</div>
+<script>
+(function () {
+  var EXEC = 'https://script.google.com/macros/s/AKfycbzlPMNA2JZ-PNu9ABxtXXli7WItMm0ye2NtICi3NwgZ-8-nBroCcezt5CUZmdBc4kdnnA/exec';
+  try { var tg = window.Telegram && Telegram.WebApp; if (tg) { tg.ready(); tg.expand(); } } catch (e) {}
+  var q = new URLSearchParams(location.search), k = q.get('k') || '', tab = q.get('tab') || '';
+  var m = document.getElementById('m');
+
+  // google.script.run -> HTTP към Apps Script (за бутоните Поръчка / Обещал / Отказ)
+  var shim = '(' + function (EXEC) {
+    var enc = encodeURIComponent;
+    function mk(s, f) {
+      return {
+        withSuccessHandler: function (x) { return mk(x, f); },
+        withFailureHandler: function (x) { return mk(s, x); },
+        recordResult: function (key, client, label, reason) {
+          fetch(EXEC + '?api=rec&k=' + enc(key) + '&client=' + enc(client) + '&label=' + enc(label) + '&reason=' + enc(reason || ''))
+            .then(function (r) { return r.json(); })
+            .then(function (d) { if (d.ok) { if (s) s(d.res); } else if (f) f(new Error(d.error)); })
+            .catch(function (e) { if (f) f(e); });
+        }
+      };
+    }
+    window.google = {script: {run: mk(null, null)}};
+  }.toString() + ')(' + JSON.stringify(EXEC) + ');';
+
+  fetch(EXEC + '?api=html&k=' + encodeURIComponent(k) + '&tab=' + encodeURIComponent(tab))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) { m.textContent = d.error || 'Невалиден линк.'; return; }
+      var h = d.html.replace('<head>', '<head><scr' + 'ipt>' + shim + '</scr' + 'ipt>');
+      document.open(); document.write(h); document.close();
+    })
+    .catch(function () { m.textContent = 'Грешка при зареждане. Опитай пак.'; });
+})();
+</script>
+</body>
+</html>
